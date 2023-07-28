@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "bildaj": "webpack",
     "watch": "webpack --watch --config webpack.config.js",
-    "api":"json-server --watch ./db/movies-db.json"
+    "api":"json-server --watch ./db/users-db.json"
   },
   "author": "",
   "license": "ISC",

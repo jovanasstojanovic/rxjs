@@ -1,22 +1,27 @@
 import { Observable, Subject, Subscription, combineLatest, debounceTime, filter, forkJoin, from, fromEvent, interval, map, merge, pairwise, range, reduce, sampleTime, scan, switchMap, take, takeUntil, zip } from "rxjs";
 
-function Kliknuto(){
+//         debounceTime(500)
 
+async function Popunjeno(inputValue:string){
+    const p=new Promise<Boolean>((resolve,reject)=>{
+
+    });
+    return p;
 }
 
 
 
 function unosTermina():Element
 {
-    let nizDana=["ponedeljak","utorak","sreda","cetvrtak","petak","subota","nedelja"];
+    let nizDana=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
     let odgovara=[0,0,0,0,0,0,0];
 
     const date=new Date();
     let day=date.getDay();
 
-    const tabela=document.createElement("div");
-        tabela.style.display="flex";
-        tabela.style.flexDirection="row";
+    const termini=document.createElement("div");
+        termini.style.display="flex";
+        termini.style.flexDirection="row";
 
     for(let i=0;i<7;i++)
     {
@@ -32,22 +37,79 @@ function unosTermina():Element
             x.style.cursor="pointer";
         dan.appendChild(x);
 
+        const checked$=fromEvent(x, "click");
+                    checked$.pipe(
+                        map((event) => {
+                          const checkbox = event.target as HTMLInputElement;
+                          return checkbox.checked ? 1 : 0;
+                        })
+                      ).subscribe((value) => {
+                        odgovara[i] = value;
+                        console.log(odgovara); 
+                      });
+
         const kojiDan=document.createElement("label");
             kojiDan.innerHTML=nizDana[day];
             kojiDan.style.fontSize="18px";
-            kojiDan.style.fontFamily="Arial, Helvetica, sans-serif";
+            kojiDan.style.fontFamily="'Trebuchet MS', sans-serif";
         dan.appendChild(kojiDan);
-        tabela.appendChild(dan);
+        termini.appendChild(dan);
         
         day++;
         if(day==7) day=0;
     }
-        tabela.style.marginTop="20px";
+        termini.style.marginTop="20px";
     
-        return tabela;
-    //document.body.appendChild(tabela);
+    return termini;
+    //document.body.appendChild(termini);
 }
 
+//mozda treba dugme samo da pamti ime, a ono sto se stiklira da daje priview ?
+// DAAA DODATI PREVIEW, ili neki realtime info o tome koliko osoba je stikliralo taj dan takodje-to je bolje
+//ili da budu crveni dani koji nikome do sada nisu odgovarali
+function Predaja(input:HTMLInputElement):Element{
+    const div=document.createElement("div");
+
+    const button=document.createElement("button");
+    document.body.appendChild(button);
+        button.innerHTML="Submit";
+    div.appendChild(button);
+        div.style.display="flex";
+        div.style.justifyContent="right";
+        div.style.marginRight="100px";
+        button.style.fontSize="25px";
+        button.style.fontFamily="'Trebuchet MS', sans-serif";
+        button.style.padding="8px";
+        button.style.paddingRight="12px";
+        button.style.paddingLeft="12px";
+        button.style.borderRadius="50px";
+        button.style.borderColor="white";
+        button.style.color="white";
+        button.style.cursor="pointer";
+        button.style.backgroundColor="#b300b3";
+
+        const click$ = fromEvent(button, 'click');
+
+        click$.pipe(
+          map(() => {
+            const inputValue = input.value;
+            if (!inputValue) {
+              let person = prompt("Please enter your name:", "Harry Potter");
+              return person;
+            }
+            return inputValue;
+          }),
+          switchMap((inputValue) =>
+            from(Promise.resolve(`Uneli ste: ${inputValue}`)) // Ovde možete da vratite neku asinhronu operaciju
+            )).subscribe(
+              (result) => {
+                    console.log(result);
+                }
+                );
+    return div;
+}
+
+//eee i za kombinacione operatore iskombinovati klikove na Submit i klikove na dane
 
 function ime()
 {
@@ -57,20 +119,21 @@ function ime()
         containerPodaci.style.padding="20px";
         containerPodaci.style.paddingLeft="40px";
         containerPodaci.style.margin="15px";
+        containerPodaci.style.marginTop="0px";
 
     const manji=document.createElement("div");
     document.body.appendChild(containerPodaci);
 
     //ime mozda ne treba ??
     const labela=document.createElement("label");
-        labela.innerHTML="Unesite Vase ime: ";
-        labela.style.fontFamily="Arial, Helvetica, sans-serif";
+        labela.innerHTML="Your name: ";
+        labela.style.fontFamily="'Trebuchet MS', sans-serif";
         labela.style.fontSize="23px";
     manji.appendChild(labela);
 
     const unosImena=document.createElement("input");
         unosImena.style.fontSize="23px";
-        unosImena.style.fontFamily="Arial, Helvetica, sans-serif";
+        unosImena.style.fontFamily="'Trebuchet MS', sans-serif";
         unosImena.style.borderRadius="50px";
         unosImena.style.paddingLeft="10px";
         unosImena.style.color="#b300b3";
@@ -78,14 +141,17 @@ function ime()
     manji.appendChild(unosImena);
     containerPodaci.appendChild(manji);
     
-    const tabela=document.createElement("div");
-    tabela.appendChild(unosTermina());
-        tabela.style.display="flex";
-        tabela.style.justifyContent="center";
+    const termini=document.createElement("div");
+    termini.appendChild(unosTermina());
+        termini.style.display="flex";
+        termini.style.justifyContent="center";
 
-    containerPodaci.appendChild(tabela);
+    containerPodaci.appendChild(termini);
+
+    containerPodaci.appendChild(Predaja(unosImena));
 }
 ime();
+
 
 // const first$=interval(500).pipe(//prvi tok
 //     map(x=>"prvi-"+x),
