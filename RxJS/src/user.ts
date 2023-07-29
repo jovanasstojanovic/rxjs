@@ -1,4 +1,10 @@
 export interface User {
+    id:number;
     ime: string;
-    brojevi: number[];
+    brojevi: Dani;
+  }
+
+
+export interface Dani{
+  [key: number]: number;
   }

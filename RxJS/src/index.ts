@@ -1,4 +1,5 @@
 import { Observable, Subject, Subscription, combineLatest, debounceTime, filter, forkJoin, from, fromEvent, interval, map, merge, pairwise, range, reduce, sampleTime, scan, switchMap, take, takeUntil, zip } from "rxjs";
+import { Dani } from "./user";
 
 //         debounceTime(500)
 
@@ -9,12 +10,13 @@ async function Popunjeno(inputValue:string){
     return p;
 }
 
-
+let odgovara=[0,0,0,0,0,0,0];
+let idjevi=3;
 
 function unosTermina():Element
 {
     let nizDana=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-    let odgovara=[0,0,0,0,0,0,0];
+  
 
     const date=new Date();
     let day=date.getDay();
@@ -88,6 +90,10 @@ function Predaja(input:HTMLInputElement):Element{
         button.style.cursor="pointer";
         button.style.backgroundColor="#b300b3";
 
+        let daniObj: Dani = {} as Dani;
+        odgovara.forEach((value, index) => {
+            daniObj[index] = value;
+         });
         const click$ = fromEvent(button, 'click');
 
         click$.pipe(
@@ -100,7 +106,7 @@ function Predaja(input:HTMLInputElement):Element{
             return inputValue;
           }),
           switchMap((inputValue) =>
-            from(Promise.resolve(`Uneli ste: ${inputValue}`)) // Ovde možete da vratite neku asinhronu operaciju
+            from(sendUserDataToServer(inputValue, daniObj).then().catch()) // Ovde možete da vratite neku asinhronu operaciju
             )).subscribe(
               (result) => {
                     console.log(result);
@@ -108,6 +114,26 @@ function Predaja(input:HTMLInputElement):Element{
                 );
     return div;
 }
+
+function sendUserDataToServer(inputValue: string, dani:Dani): Promise<any> {
+    return new Promise((resolve, reject) => {
+      fetch('http://localhost:3000/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ime: inputValue, dani: dani })
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Greška prilikom slanja podataka na server.');
+          }
+          return response.json();
+        })
+        .then((data) => resolve(data))
+        .catch((error) => reject(error));
+    });
+  }
 
 //eee i za kombinacione operatore iskombinovati klikove na Submit i klikove na dane
 
