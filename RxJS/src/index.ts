@@ -1,17 +1,10 @@
-import { Observable, Subject, Subscription, combineLatest, debounceTime, filter, forkJoin, from, fromEvent, interval, map, merge, pairwise, range, reduce, sampleTime, scan, switchMap, take, takeUntil, zip } from "rxjs";
-import { Dani } from "./user";
+import { Observable, Subject, Subscription, combineLatest, debounceTime, filter, forkJoin, from, fromEvent, interval, map, merge, of, pairwise, pluck, range, reduce, sampleTime, scan, startWith, switchMap, take, takeUntil, zip } from "rxjs";
+import { Dani, User } from "./user";
 
 //         debounceTime(500)
 
-async function Popunjeno(inputValue:string){
-    const p=new Promise<Boolean>((resolve,reject)=>{
-
-    });
-    return p;
-}
 
 let odgovara=[0,0,0,0,0,0,0];
-let idjevi=3;
 
 function unosTermina():Element
 {
@@ -90,28 +83,30 @@ function Predaja(input:HTMLInputElement):Element{
         button.style.cursor="pointer";
         button.style.backgroundColor="#b300b3";
 
-        let daniObj: Dani = {} as Dani;
-        odgovara.forEach((value, index) => {
-            daniObj[index] = value;
-         });
-        const click$ = fromEvent(button, 'click');
-
-        click$.pipe(
+         
+         // Kreirati click$ Observable koristeći zip funkciju
+         const click$ = fromEvent(button, 'click').pipe(
           map(() => {
             const inputValue = input.value;
             if (!inputValue) {
-              let person = prompt("Please enter your name:", "Harry Potter");
+              let person = prompt('Please enter your name:', 'Harry Potter');
               return person;
             }
             return inputValue;
           }),
-          switchMap((inputValue) =>
-            from(sendUserDataToServer(inputValue, daniObj).then().catch()) // Ovde možete da vratite neku asinhronu operaciju
-            )).subscribe(
-              (result) => {
-                    console.log(result);
-                }
-                );
+          switchMap((inputValue) => {
+            const daniObj: Dani = {};
+            odgovara.forEach((value, index) => {
+              daniObj[index] = value;
+            });
+            console.log(inputValue, daniObj);
+            return sendUserDataToServer(inputValue, daniObj); // Ovde koristimo return kako bismo poslali rezultat sendUserDataToServer funkcije
+          })
+        ).subscribe(
+          (result) => {
+            console.log(result);
+          }
+        );
     return div;
 }
 
@@ -136,6 +131,58 @@ function sendUserDataToServer(inputValue: string, dani:Dani): Promise<any> {
   }
 
 //eee i za kombinacione operatore iskombinovati klikove na Submit i klikove na dane
+
+
+//////////////////////////////////////////////
+
+const baseUrl = 'http://localhost:3000';
+
+
+function fetchUsers(baseUrl: string): Observable<User> {
+  return new Observable((subscriber) => {
+    fetch(`${baseUrl}/users`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Greška prilikom dohvatanja korisnika.');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Ako podaci nisu niz korisnika, već samo jedan korisnik, pretvaramo ga u niz kako bismo lakše rukovali sa njim.
+        const usersArray = Array.isArray(data) ? data : [data];
+
+        // Emitujemo svakog korisnika pojedinačno u okviru niza
+        usersArray.forEach((user: User) => subscriber.next(user));
+
+        // Kada smo završili sa emitovanjem korisnika, zatvaramo stream
+        subscriber.complete();
+      })
+      .catch((error) => subscriber.error(error));
+  });
+}
+
+const users$ = fetchUsers(baseUrl);
+let niz=[0,0,0,0,0,0,0];
+
+users$.pipe(take(10)).subscribe((user: User) => {
+  console.log(user);
+});
+
+const dani$: Observable<Dani> = users$.pipe(
+  take(10),
+  map((dani) => dani.dani)
+);
+
+dani$.subscribe((dani) => {
+
+  console.log(dani);
+  Object.values(dani).forEach((value, index) => {
+    niz[index] += value;
+  });
+
+  console.log(niz);
+});
+///////////////////////////////////////////////
 
 function ime()
 {
@@ -177,6 +224,13 @@ function ime()
     containerPodaci.appendChild(Predaja(unosImena));
 }
 ime();
+///////////////////////////////////////////////////
+
+function tabela(){
+  
+}
+
+
 
 
 // const first$=interval(500).pipe(//prvi tok

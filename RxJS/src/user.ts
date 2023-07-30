@@ -1,7 +1,8 @@
 export interface User {
-    id:number;
+    
     ime: string;
-    brojevi: Dani;
+    dani: Dani;
+    id:number;
   }
 
 
