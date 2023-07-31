@@ -1,4 +1,4 @@
-import { Observable, Subject, Subscription, combineLatest, debounceTime, filter, forkJoin, from, fromEvent, interval, map, merge, of, pairwise, pluck, range, reduce, sampleTime, scan, startWith, switchMap, take, takeUntil, zip } from "rxjs";
+import { Observable, Subject, Subscription, combineLatest, debounceTime, filter, forkJoin, from, fromEvent, interval, map, merge, of, pairwise, pluck, range, reduce, sampleTime, scan, startWith, switchMap, take, takeUntil, tap, zip } from "rxjs";
 import { Dani, User } from "./user";
 
 //         debounceTime(500)
@@ -6,13 +6,16 @@ import { Dani, User } from "./user";
 
 let odgovara=[0,0,0,0,0,0,0];
 
+const date=new Date();
+let day=date.getDay();
+
 function unosTermina():Element
 {
     let nizDana=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
   
 
-    const date=new Date();
-    let day=date.getDay();
+   
+   
 
     const termini=document.createElement("div");
         termini.style.display="flex";
@@ -45,7 +48,7 @@ function unosTermina():Element
 
         const kojiDan=document.createElement("label");
             kojiDan.innerHTML=nizDana[day];
-            kojiDan.style.fontSize="18px";
+            kojiDan.style.fontSize="25px";
             kojiDan.style.fontFamily="'Trebuchet MS', sans-serif";
         dan.appendChild(kojiDan);
         termini.appendChild(dan);
@@ -84,7 +87,6 @@ function Predaja(input:HTMLInputElement):Element{
         button.style.backgroundColor="#b300b3";
 
          
-         // Kreirati click$ Observable koristeći zip funkciju
          const click$ = fromEvent(button, 'click').pipe(
           map(() => {
             const inputValue = input.value;
@@ -130,7 +132,6 @@ function sendUserDataToServer(inputValue: string, dani:Dani): Promise<any> {
     });
   }
 
-//eee i za kombinacione operatore iskombinovati klikove na Submit i klikove na dane
 
 
 //////////////////////////////////////////////
@@ -162,6 +163,42 @@ function fetchUsers(baseUrl: string): Observable<User> {
 }
 
 const users$ = fetchUsers(baseUrl);
+
+const names$ = users$.pipe(
+  map((user: User) => user.ime),
+  reduce((acc: string[], name: string) => [...acc, name], []) // Inicijalni akumulator je prazan niz []
+  );
+
+
+  function lista(){
+    const listaImena=document.createElement("div");
+    listaImena.style.width="100%";
+    listaImena.style.marginTop="10px";
+    listaImena.style.display="flex";
+    listaImena.style.flexDirection="row-reverse";
+    listaImena.style.flexWrap="wrap";
+    names$.subscribe((allNames: string[]) => {
+      console.log(allNames);
+      allNames.forEach((ime)=>{
+        const jedno=document.createElement("label");
+        jedno.style.fontSize="30px";
+        jedno.style.margin="20px";
+        jedno.style.fontFamily="'Brush Script MT', cursive";
+        jedno.style.color="#343434";
+        jedno.innerHTML="• "+ime;
+        listaImena.appendChild(jedno);
+      })
+    });
+    const linija=document.createElement("div");
+    linija.style.width="100%";
+    linija.style.height="1px";
+    linija.style.backgroundColor="#e6e6e6";
+    linija.style.marginTop="50px";
+    document.body.appendChild(linija);
+    document.body.appendChild(listaImena);
+  }
+  
+
 let niz=[0,0,0,0,0,0,0];
 
 users$.pipe(take(10)).subscribe((user: User) => {
@@ -173,11 +210,13 @@ const dani$: Observable<Dani> = users$.pipe(
   map((dani) => dani.dani)
 );
 
-dani$.subscribe((dani) => {
 
+const niz$: Subject<number[]> = new Subject<number[]>();
+dani$.subscribe((dani) => {
+  niz$.next([...niz]);
   console.log(dani);
   Object.values(dani).forEach((value, index) => {
-    niz[index] += value;
+    //niz[index] += value;
   });
 
   console.log(niz);
@@ -201,11 +240,11 @@ function ime()
     const labela=document.createElement("label");
         labela.innerHTML="Your name: ";
         labela.style.fontFamily="'Trebuchet MS', sans-serif";
-        labela.style.fontSize="23px";
+        labela.style.fontSize="25px";
     manji.appendChild(labela);
 
     const unosImena=document.createElement("input");
-        unosImena.style.fontSize="23px";
+        unosImena.style.fontSize="25px";
         unosImena.style.fontFamily="'Trebuchet MS', sans-serif";
         unosImena.style.borderRadius="50px";
         unosImena.style.paddingLeft="10px";
@@ -222,14 +261,77 @@ function ime()
     containerPodaci.appendChild(termini);
 
     containerPodaci.appendChild(Predaja(unosImena));
+    containerPodaci.style.marginBottom="30px";
+    const linija=document.createElement("div");
+    linija.style.width="100%";
+    linija.style.height="1px";
+    linija.style.backgroundColor="#e6e6e6";
+    linija.style.marginBottom="20px";
+    document.body.appendChild(linija);
+    const tabelica=document.createElement("div");
+    tabelica.style.display="flex";
+    tabelica.style.flexDirection="row";
+    tabelica.style.width="60%";
+    tabelica.style.marginLeft="20%";
+    const naslov=document.createElement("div");
+    const raspored=document.createElement("label");
+    naslov.style.display="flex";
+    
+    naslov.style.justifyContent="center";
+    naslov.style.marginBottom="10px";
+    naslov.appendChild(raspored);
+    raspored.style.fontFamily="'Brush Script MT', cursive";
+    raspored.innerHTML="Schedule";
+    raspored.style.color="#343434";
+    //raspored.style.borderBottom="2px solid black";
+    raspored.style.fontSize="70px";
+    document.body.appendChild(naslov);
+
+    document.body.appendChild(tabelica);
+    tabela(tabelica);
+    lista();
 }
 ime();
 ///////////////////////////////////////////////////
 
-function tabela(){
+function tabela(container:HTMLDivElement){
+  const slova=["M","T","W","T","F","S","S"];
+  for (let i = 0; i < 7; i++) {
+    let dan = document.createElement("div");
+    dan.style.border="3px solid white";
+    dan.style.height="80px";
+    dan.style.width="14%";
+    const labela=document.createElement("label");
+            labela.innerHTML=slova[(day+i)%7];
+            labela.style.margin="5px";
+            labela.style.fontFamily="'Trebuchet MS', sans-serif";
+            labela.style.fontSize="25px";
+            dan.appendChild(labela);
+    dan.classList.add("dan-div");
+    container.appendChild(dan);
+  }
+  combineLatest([niz$, dani$]).pipe(
+    tap(([niz, dani]) => {
+      niz.forEach((value, index) => {
+        niz[index] += dani[index];
+      });
   
+      console.log(niz);
+      
+        const divs = document.querySelectorAll(".dan-div");
+        divs.forEach((div:HTMLDivElement, index) => {
+          if (niz[index] >0) {
+            let val=100-8*niz[index];
+            
+            div.style.backgroundColor = "hsl(300, 100%, "+val+"%)"; // Ako je odgovara[index] 1, postavi boju na zelenu
+          } else {
+            div.style.backgroundColor = "#e6e6e6"; // Inače, postavi boju na crvenu
+          }
+        });
+      
+    })
+  ).subscribe();
 }
-
 
 
 
