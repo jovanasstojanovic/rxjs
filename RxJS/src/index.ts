@@ -2,7 +2,7 @@ import { Observable, Subject, Subscription, combineLatest, debounceTime, filter,
 import { Dani, User } from "./user";
 
 //         debounceTime(500)
-
+//staviti opciju da se vidi posebno ya svaku osobu
 
 
 
@@ -362,7 +362,7 @@ function tabela(container:HTMLDivElement){
         const divs = document.querySelectorAll(".dan-div");
         divs.forEach((div:HTMLDivElement, index) => {
           if (niz[index] >0) {
-            let val=100-7*niz[index];
+            let val=100-10*niz[index];
             
             div.style.backgroundColor = "hsl(300, 100%, "+val+"%)"; // Ako je odgovara[index] 1, postavi boju na zelenu
             //boja za preko odredjenog broja
@@ -375,3 +375,32 @@ function tabela(container:HTMLDivElement){
   ).subscribe();
 }
 
+///////////////////////////////
+//brisanje posle 12
+const stopChecking$ = new Subject();
+
+const checkTime = interval(60 * 60 * 1000).pipe(
+  map(() => new Date().getHours()), // Emituje trenutni sat
+  takeUntil(stopChecking$) // Zaustavlja emitovanje kada se aktivira stopChecking$
+);
+
+function clearData() {
+  // Ovde biste pozvali API endpoint na serveru koji će izvršiti brisanje podataka iz baze
+  // Na primer:
+  fetch('/api/clear-data', { method: 'POST' })
+     .then(response => response.json())
+     .then(data => {
+       stopChecking$.next(null); // Emitujte vrednost u Subject kako biste zaustavili dalje emitovanje vremena
+     })
+    .catch(error => console.error('Greška prilikom brisanja podataka:', error));
+
+  stopChecking$.next(null); // Emitujte vrednost u Subject kako biste zaustavili dalje emitovanje vremena
+}
+
+checkTime.pipe(
+  map((hour) => {
+    if (hour >= 0 && hour < 1) {
+      clearData(); // Ako je trenutno vreme od ponoci do 1 ujutru, izvrši brisanje podataka
+    }
+  })
+).subscribe();
