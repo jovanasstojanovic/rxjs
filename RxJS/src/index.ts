@@ -62,7 +62,6 @@ function unosTermina():Element
         termini.style.marginTop="20px";
     
     return termini;
-    //document.body.appendChild(termini);
 }
 
 
@@ -85,8 +84,18 @@ function Predaja(input:HTMLInputElement):Element{
         button.style.borderColor="white";
         button.style.color="white";
         button.style.cursor="pointer";
-        button.style.backgroundColor="#b300b3";
+        button.style.backgroundColor="black";
+        button.style.opacity="50%";
 
+        button.addEventListener('mouseout', () => {
+          button.style.backgroundColor="black";
+        button.style.opacity="50%";
+        });
+  
+        button.addEventListener('mouseover', () => {
+          button.style.backgroundColor="#b300b3";
+          button.style.opacity="1";
+        });
          
          const click$ = fromEvent(button, 'click').pipe(
           map(() => {
@@ -103,7 +112,7 @@ function Predaja(input:HTMLInputElement):Element{
               daniObj[index] = value;
             });
             console.log(inputValue, daniObj);
-            return sendUserDataToServer(inputValue, daniObj); // Ovde koristimo return kako bismo poslali rezultat sendUserDataToServer funkcije
+            return sendUserDataToServer(inputValue, daniObj);
           })
         ).subscribe(
           (result) => {
@@ -150,13 +159,8 @@ function fetchUsers(baseUrl: string): Observable<User> {
         return response.json();
       })
       .then((data) => {
-        // Ako podaci nisu niz korisnika, već samo jedan korisnik, pretvaramo ga u niz kako bismo lakše rukovali sa njim.
-        const usersArray = Array.isArray(data) ? data : [data];
-
-        // Emitujemo svakog korisnika pojedinačno u okviru niza
-        usersArray.forEach((user: User) => subscriber.next(user));
-
-        // Kada smo završili sa emitovanjem korisnika, zatvaramo stream
+       const usersArray = Array.isArray(data) ? data : [data];
+       usersArray.forEach((user: User) => subscriber.next(user));
         subscriber.complete();
       })
       .catch((error) => subscriber.error(error));
@@ -167,7 +171,7 @@ const users$ = fetchUsers(baseUrl);
 
 const names$ = users$.pipe(
   map((user: User) => user.ime),
-  reduce((acc: string[], name: string) => [...acc, name], []) // Inicijalni akumulator je prazan niz []
+  reduce((acc: string[], name: string) => [...acc, name], [])
   );
 
 
@@ -178,17 +182,27 @@ const names$ = users$.pipe(
     listaImena.style.display="flex";
     listaImena.style.flexDirection="row-reverse";
     listaImena.style.flexWrap="wrap";
+    
     names$.subscribe((allNames: string[]) => {
       console.log(allNames);
-      allNames.forEach((ime)=>{
-        const jedno=document.createElement("label");
+      let br=-1;
+      allNames.forEach((ime, index)=>{
+        if(index<10)
+        {
+          br=index;
+          const jedno=document.createElement("label");
         jedno.style.fontSize="30px";
         jedno.style.margin="20px";
         jedno.style.fontFamily="'Brush Script MT', cursive";
         jedno.style.color="#343434";
         jedno.innerHTML="• "+ime;
         listaImena.appendChild(jedno);
-      })
+        }
+      });
+      if(br>=0)
+      {
+        brisi(listaImena);
+      }
     });
     const linija=document.createElement("div");
     linija.style.width="100%";
@@ -201,10 +215,6 @@ const names$ = users$.pipe(
   
 
 let niz=[0,0,0,0,0,0,0];
-
-users$.pipe(take(10)).subscribe((user: User) => {
-  console.log(user);
-});
 
 const dani$: Observable<Dani> = users$.pipe(
   take(10),
@@ -227,7 +237,7 @@ dani$.subscribe((dani) => {
 function ime()
 {
     const containerPodaci=document.createElement("div");
-        containerPodaci.style.backgroundColor="#ffccff";//hsl(300, 100%, 90%)
+        containerPodaci.style.backgroundColor="#ffccff";
         containerPodaci.style.borderRadius="50px";
         containerPodaci.style.padding="20px";
         containerPodaci.style.paddingLeft="40px";
@@ -237,9 +247,7 @@ function ime()
     const manji=document.createElement("div");
     document.body.appendChild(containerPodaci);
   manji.style.display="flex";
-    //ime mozda ne treba ??
     const labela=document.createElement("label");
-    //labela.style.marginTop="5px";
         labela.innerHTML="Your name: ";
         labela.style.fontFamily="'Trebuchet MS', sans-serif";
         labela.style.fontSize="25px";
@@ -324,7 +332,6 @@ function ime()
     raspored.style.fontFamily="'Brush Script MT', cursive";
     raspored.innerHTML="Schedule";
     raspored.style.color="#343434";
-    //raspored.style.borderBottom="2px solid black";
     raspored.style.fontSize="70px";
     document.body.appendChild(naslov);
 
@@ -362,45 +369,91 @@ function tabela(container:HTMLDivElement){
         const divs = document.querySelectorAll(".dan-div");
         divs.forEach((div:HTMLDivElement, index) => {
           if (niz[index] >0) {
-            let val=100-10*niz[index];
-            
-            div.style.backgroundColor = "hsl(300, 100%, "+val+"%)"; // Ako je odgovara[index] 1, postavi boju na zelenu
-            //boja za preko odredjenog broja
+            let val1=100-10*niz[index];
+            div.style.backgroundColor = "hsl(300, 100%, "+val1+"%)"; 
           } else {
-            div.style.backgroundColor = "#e6e6e6"; // Inače, postavi boju na crvenu
+            div.style.backgroundColor = "#e6e6e6";
           }
         });
       
     })
   ).subscribe();
+  
 }
 
-///////////////////////////////
-//brisanje posle 12
-const stopChecking$ = new Subject();
 
-const checkTime = interval(60 * 60 * 1000).pipe(
-  map(() => new Date().getHours()), // Emituje trenutni sat
-  takeUntil(stopChecking$) // Zaustavlja emitovanje kada se aktivira stopChecking$
-);
 
-function clearData() {
-  // Ovde biste pozvali API endpoint na serveru koji će izvršiti brisanje podataka iz baze
-  // Na primer:
-  fetch('/api/clear-data', { method: 'POST' })
-     .then(response => response.json())
-     .then(data => {
-       stopChecking$.next(null); // Emitujte vrednost u Subject kako biste zaustavili dalje emitovanje vremena
-     })
-    .catch(error => console.error('Greška prilikom brisanja podataka:', error));
+function brisi(div: HTMLDivElement) {
+  const ikona = document.createElement("img");
+  ikona.src = "../slike/trash.png";
+  ikona.style.cursor = "pointer"; 
+  ikona.style.width = "50px"; 
+  ikona.style.height = "50px";
+  ikona.style.marginTop="10px";
+  ikona.style.opacity= "0.7";
+ 
 
-  stopChecking$.next(null); // Emitujte vrednost u Subject kako biste zaustavili dalje emitovanje vremena
+  ikona.addEventListener('mouseover', () => {
+    
+    ikona.style.opacity= "1";
+  });
+
+  ikona.addEventListener('mouseout', () => {
+  
+    ikona.style.opacity= "0.7";
+  });
+
+  div.appendChild(ikona);
+
+  const klik = fromEvent(ikona, 'click').subscribe((dummy) => {
+    deleteUsersIfExist('http://localhost:3000').then(() => {
+      console.log('Svi korisnici su obrisani iz baze.');
+    }).catch((error) => {
+      console.error('Došlo je do greške prilikom brisanja korisnika:', error);
+    });
+  });
 }
 
-checkTime.pipe(
-  map((hour) => {
-    if (hour >= 0 && hour < 1) {
-      clearData(); // Ako je trenutno vreme od ponoci do 1 ujutru, izvrši brisanje podataka
-    }
-  })
-).subscribe();
+function deleteUsersIfExist(baseUrl: string): Promise<any> {
+  const unsubscribeSubject$ = new Subject<void>();
+  
+  return new Promise((resolve, reject) => {
+    fetchUsers(baseUrl)
+      .pipe(
+        filter((user) => user !== undefined && user !== null), 
+        takeUntil(unsubscribeSubject$)
+      )
+      .subscribe(
+        (user) => {
+          deleteUserFromServer(user.id,baseUrl).then(() => {
+            console.log(`Korisnik ${user.ime} je obrisan.`);
+          })
+          .catch((error) => {
+            console.error(`Greška prilikom brisanja korisnika ${user.ime}:`, error);
+          });
+          console.log(user);
+        }
+      );
+  });
+}
+
+
+
+
+function deleteUserFromServer(userId: number, baseUrl: string): Promise<any> {
+  const url = `${baseUrl}/users/${userId}`;
+
+  return new Promise((resolve, reject) => {
+    fetch(url, {
+      method: 'DELETE',
+    })
+      .then((response) => {
+        if (!response.ok) {
+          reject("greska");
+        }
+        resolve(response);
+      })
+      .catch((error) => reject(error));
+  });
+}
+
